@@ -106,7 +106,7 @@ final class GameController: UIViewController, WKScriptMessageHandler, WKNavigati
         }
     }
     private func proxyAPI(_ id:String,_ data:[String:Any]) {
-        guard let path=data["path"] as? String, ["/api/runs/start","/api/runs/finish","/api/leaderboard?mode=daily","/api/leaderboard?mode=assault", "/api/leaderboard?mode=assault&av=2"].contains(path), let url=URL(string:origin+path) else { reply(id,["httpStatus":400]); return }
+        guard let path=data["path"] as? String, ["/api/runs/start","/api/runs/finish","/api/leaderboard?mode=daily","/api/leaderboard?mode=assault", "/api/leaderboard?mode=assault&av=2", "/api/leaderboard?mode=assault&av=3"].contains(path), let url=URL(string:origin+path) else { reply(id,["httpStatus":400]); return }
         var req=URLRequest(url:url);req.timeoutInterval=6
         if let body=data["body"], !(body is NSNull) {
             guard let bytes=try? JSONSerialization.data(withJSONObject:body), bytes.count<=49152 else { reply(id,["httpStatus":413]); return }

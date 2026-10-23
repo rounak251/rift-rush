@@ -9,7 +9,7 @@ export class APIError extends Error{constructor(status,message){super(message);t
 async function key(secret){if(!secret||secret.length<32)throw new APIError(503,'Online scores are temporarily unavailable.');if(!keyCache.has(secret)){if(keyCache.size>2)keyCache.clear();keyCache.set(secret,await crypto.subtle.importKey('raw',enc.encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']))}return keyCache.get(secret)}
 export async function signTicket(payload,secret){const body=b64(enc.encode(JSON.stringify(payload)));const signature=await crypto.subtle.sign('HMAC',await key(secret),enc.encode(body));return body+'.'+b64(new Uint8Array(signature))}
 export async function verifyTicket(token,secret,now=Date.now()){
- try{if(typeof token!=='string'||token.length>1600)throw 0;const parts=token.split('.');if(parts.length!==2)throw 0;const[body,signature]=parts;if(!await crypto.subtle.verify('HMAC',await key(secret),unb64(signature),enc.encode(body)))throw 0;const t=JSON.parse(dec.decode(unb64(body)));if(t.v!==VERSION||!Number.isSafeInteger(t.exp)||t.exp<now||t.iat>now+5000||!Number.isInteger(t.seed)||t.seed<0||t.seed>4294967295||!['assault','rush','daily','endless'].includes(t.mode)||(t.assaultVersion!==undefined&&![1,2].includes(t.assaultVersion))||!/^[-\w]{16,64}$/.test(t.id)||!/^[-\w]{16,64}$/.test(t.player))throw 0;return t}catch(e){if(e instanceof APIError)throw e;throw new APIError(401,'This run ticket is invalid or expired.')}
+ try{if(typeof token!=='string'||token.length>1600)throw 0;const parts=token.split('.');if(parts.length!==2)throw 0;const[body,signature]=parts;if(!await crypto.subtle.verify('HMAC',await key(secret),unb64(signature),enc.encode(body)))throw 0;const t=JSON.parse(dec.decode(unb64(body)));if(t.v!==VERSION||!Number.isSafeInteger(t.exp)||t.exp<now||t.iat>now+5000||!Number.isInteger(t.seed)||t.seed<0||t.seed>4294967295||!['assault','rush','daily','endless'].includes(t.mode)||(t.assaultVersion!==undefined&&![1,2,3].includes(t.assaultVersion))||!/^[-\w]{16,64}$/.test(t.id)||!/^[-\w]{16,64}$/.test(t.player))throw 0;return t}catch(e){if(e instanceof APIError)throw e;throw new APIError(401,'This run ticket is invalid or expired.')}
 }
 export async function readJSON(request){
  if(!request.headers.get('content-type')?.startsWith('application/json'))throw new APIError(415,'Send JSON.');
@@ -26,7 +26,7 @@ export function replayRun(ticket,body,now=Date.now()){
  if(!Number.isInteger(ticks)||ticks<1||ticks>MAX_TICKS)throw new APIError(400,'Invalid run length.');
  if(!Array.isArray(events)||events.length>MAX_EVENTS)throw new APIError(400,'Invalid replay.');
  if(ticks*STEP*1000>now-ticket.iat+2500)throw new APIError(400,'Run completed faster than real time.');
- let previous=-1;for(const e of events){if(!Array.isArray(e)||e.length!==2||!Number.isInteger(e[0])||e[0]<0||e[0]>=ticks||e[0]<previous||!(ticket.mode==='assault'?(ticket.assaultVersion===2?['L','R','B','U0','U1','U2','U3','U4','U5']:['L','R','B','U0','U1','U2']):['L','R','B']).includes(e[1]))throw new APIError(400,'Invalid replay event.');previous=e[0]}
+ let previous=-1;for(const e of events){if(!Array.isArray(e)||e.length!==2||!Number.isInteger(e[0])||e[0]<0||e[0]>=ticks||e[0]<previous||!(ticket.mode==='assault'?(ticket.assaultVersion>=2?['L','R','B','U0','U1','U2','U3','U4','U5']:['L','R','B','U0','U1','U2']):['L','R','B']).includes(e[1]))throw new APIError(400,'Invalid replay event.');previous=e[0]}
  const assault=ticket.mode==='assault',run=assault?createAssault(ticket.seed,ticket.assaultVersion||1):createRun(ticket.seed,ticket.mode);let index=0;
  for(let tick=0;tick<ticks;tick++){if(run.ended)throw new APIError(400,'Replay continues after the run ended.');while(index<events.length&&events[index][0]===tick){const action=events[index++][1];if(action.startsWith('U')){if(!chooseUpgrade(run,Number(action[1])))throw new APIError(400,'Invalid upgrade choice.')}else if(action==='B')(assault?nova:blast)(run);else(assault?moveAssault:move)(run,action==='L'?-1:1)}if(assault&&run.awaitingUpgrade)throw new APIError(400,'Missing upgrade choice.');(assault?stepAssault:step)(run);run.events=[]}
  if(!run.ended)throw new APIError(400,'Run has not ended.');
@@ -46,7 +46,7 @@ export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.
   if(route==='/api/runs/start'&&request.method==='POST'){
    rateLimit(request,'start',now);const body=await readJSON(request);
    if(!['assault','rush','daily','endless'].includes(body.mode)||typeof body.playerId!=='string'||!/^[a-f0-9-]{36}$/.test(body.playerId))throw new APIError(400,'Invalid run request.');
-   const assaultVersion=body.assaultVersion??1;if(![1,2].includes(assaultVersion))throw new APIError(400,'Unknown combat version.');
+   const assaultVersion=body.assaultVersion??1;if(![1,2,3].includes(assaultVersion))throw new APIError(400,'Unknown combat version.');
    const day=utcDay(new Date(now));const seed=body.mode==='daily'?hashSeed(`rift-${VERSION}-${day}`):(Number.isInteger(body.seed)&&body.seed>=0&&body.seed<=4294967295?body.seed:crypto.getRandomValues(new Uint32Array(1))[0]);
    const identity=request.headers.get('oai-authenticated-user-id')||body.playerId;
    const player=b64(new Uint8Array(await crypto.subtle.sign('HMAC',await key(env.RUN_SIGNING_KEY),enc.encode('player:'+identity)))).slice(0,22);
@@ -61,7 +61,7 @@ export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.
   }
   if(route==='/api/leaderboard'&&request.method==='GET'){
    const mode=url.searchParams.get('mode')||'daily';if(!['assault','rush','daily','endless'].includes(mode))throw new APIError(400,'Unknown mode.');
-   const assaultVersion=Number(url.searchParams.get('av')||1);if(![1,2].includes(assaultVersion))throw new APIError(400,'Unknown combat version.');
+   const assaultVersion=Number(url.searchParams.get('av')||1);if(![1,2,3].includes(assaultVersion))throw new APIError(400,'Unknown combat version.');
    const day=utcDay(new Date(now)),board=boardFor(mode,day,assaultVersion),cacheKey=new Request(url.origin+'/api/leaderboard?mode='+mode+'&av='+assaultVersion+'&day='+day);
    // Some hosted Worker dispatch environments do not expose the Cache API.
    // Cache availability must never turn a healthy database into a failed board.

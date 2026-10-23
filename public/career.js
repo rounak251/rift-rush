@@ -23,7 +23,7 @@ export function rankFor(xp){
 }
 export function settleCareer(value,run,id){
  const state=careerState(value),before=rankFor(state.xp);
- if(!run?.ended||run.mode!=='assault'||run.rules!==2||!id||state.recent.includes(id))return{state,xp:0,rewards:[],bonus:0,promoted:false};
+ if(!run?.ended||run.mode!=='assault'||![2,3].includes(run.rules)||!id||state.recent.includes(id))return{state,xp:0,rewards:[],bonus:0,promoted:false};
  const xp=Math.min(1000,integer(run.time,75)*2+integer(run.kills,200)*3+(run.won?200:0));
  state.xp=integer(state.xp+xp);state.runs++;if(run.won)state.wins++;
  state.builds=[...new Set([...state.builds,...run.upgrades.filter(i=>Number.isInteger(i)&&i>=0&&i<6)])];

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createAssault,stepAssault,moveAssault,nova,chooseUpgrade,upgradeOptions} from '../public/assault.js';
+import {createAssault,stepAssault,moveAssault,nova,chooseUpgrade,upgradeOptions} from '../public/assault-overdrive-v2.js';
 import * as legacy from '../public/assault-legacy.js';
 import {careerState,settleCareer,rankFor} from '../public/career.js';
 import {challengeURL,parseChallenge} from '../public/core.js';
