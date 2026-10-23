@@ -31,7 +31,7 @@ export function replayRun(ticket,body,now=Date.now()){
  if(!run.ended)throw new APIError(400,'Run has not ended.');
  return{score:Math.floor(run.score),shards:run.shards,duration:Math.round(run.time*1000),combo:run.bestCombo,won:run.won};
 }
-const breakers=new WeakMap();
+const breakers=new WeakMap(),boardCaches=new WeakMap();
 async function withDB(env,action){if(!env.DB)throw new APIError(503,'Leaderboard is not configured.');if((breakers.get(env.DB)||0)>Date.now())throw new APIError(503,'Leaderboard is busy. Your local score is safe.');try{return await action(env.DB)}catch(e){breakers.set(env.DB,Date.now()+5000);throw new APIError(503,'Leaderboard is busy. Your local score is safe.')}}
 function boardFor(mode,day){return mode==='daily'?'daily:'+day:mode}
 export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.now()){
@@ -60,10 +60,16 @@ export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.
   if(route==='/api/leaderboard'&&request.method==='GET'){
    const mode=url.searchParams.get('mode')||'daily';if(!['rush','daily','endless'].includes(mode))throw new APIError(400,'Unknown mode.');
    const day=utcDay(new Date(now)),board=boardFor(mode,day),cacheKey=new Request(url.origin+'/api/leaderboard?mode='+mode+'&day='+day);
-   const cache=globalThis.caches?.default;const hit=await cache?.match(cacheKey);if(hit)return hit;
+   // Some hosted Worker dispatch environments do not expose the Cache API.
+   // Cache availability must never turn a healthy database into a failed board.
+   let cache;try{cache=globalThis.caches?.default;const hit=await cache?.match(cacheKey);if(hit)return hit}catch{cache=undefined}
+   const memory=env.DB&&boardCaches.get(env.DB),local=memory?.get(board);
+   if(local&&local.expiresAt>now)return local.response.clone();
    const data=await withDB(env,db=>db.prepare('SELECT player,score,duration_ms,combo FROM best_scores WHERE board=? ORDER BY score DESC,created_at DESC LIMIT 25').bind(board).all());
    const response=reply({board,asOf:new Date(now).toISOString(),entries:(data.results||[]).map((r,i)=>({rank:i+1,alias:'Pilot-'+r.player.slice(0,6).toUpperCase(),score:r.score,duration:r.duration_ms,combo:r.combo}))},200,{'Cache-Control':'public, max-age=60, stale-while-revalidate=120'});
-   if(cache)context.waitUntil(cache.put(cacheKey,response.clone()));return response;
+   if(env.DB){let entries=boardCaches.get(env.DB);if(!entries){entries=new Map();boardCaches.set(env.DB,entries)}if(entries.size>=6)entries.delete(entries.keys().next().value);entries.set(board,{expiresAt:now+60000,response:response.clone()})}
+   if(cache){try{context.waitUntil(cache.put(cacheKey,response.clone()).catch(()=>{}))}catch{}}
+   return response;
   }
   return reply({error:'Not found.'},404);
  }catch(e){const status=e instanceof APIError?e.status:500;return reply({error:e instanceof APIError?e.message:'Scores are temporarily unavailable. Your game still works.'},status,status===429||status===503?{'Retry-After':'60'}:{})}
