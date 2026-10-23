@@ -1,0 +1,41 @@
+plugins { id 'com.android.application' }
+def pubApp = providers.gradleProperty('admobAppId').getOrElse('')
+def pubInterstitial = providers.gradleProperty('interstitialAdUnitId').getOrElse('')
+def pubRewarded = providers.gradleProperty('rewardedAdUnitId').getOrElse('')
+def productionAds = pubApp ==~ /ca-app-pub-\d{16}~\d{10}/ && pubInterstitial ==~ /ca-app-pub-\d{16}\/\d{10}/ && pubRewarded ==~ /ca-app-pub-\d{16}\/\d{10}/ && !pubApp.contains('3940256099942544')
+if (productionAds && (pubApp.split('~')[0] != pubInterstitial.split('/')[0] || pubApp.split('~')[0] != pubRewarded.split('/')[0])) throw new GradleException('Ad IDs must belong to the same publisher.')
+android {
+ namespace 'com.rounak.riftrush'
+ compileSdk 36
+ defaultConfig { applicationId 'com.rounak.riftrush'; minSdk 24; targetSdk 36; versionCode 1; versionName '1.0.0' }
+ buildFeatures { buildConfig true }
+ buildTypes {
+  debug {
+   applicationIdSuffix '.debug'
+   manifestPlaceholders = [admobAppId:'ca-app-pub-3940256099942544~3347511713']
+   buildConfigField 'boolean','ADS_ENABLED','true'
+   buildConfigField 'String','INTERSTITIAL_ID','"ca-app-pub-3940256099942544/1033173712"'
+   buildConfigField 'String','REWARDED_ID','"ca-app-pub-3940256099942544/5224354917"'
+  }
+  release {
+   minifyEnabled false
+   manifestPlaceholders = [admobAppId:productionAds?pubApp:'ca-app-pub-3940256099942544~3347511713']
+   buildConfigField 'boolean','ADS_ENABLED',productionAds?'true':'false'
+   buildConfigField 'String','INTERSTITIAL_ID','"'+(productionAds?pubInterstitial:'')+'"'
+   buildConfigField 'String','REWARDED_ID','"'+(productionAds?pubRewarded:'')+'"'
+  }
+ }
+ compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
+dependencies {
+ implementation 'androidx.webkit:webkit:1.14.0'
+ implementation 'androidx.core:core:1.16.0'
+ implementation 'com.google.android.gms:play-services-ads:24.9.0'
+ implementation 'com.google.android.ump:user-messaging-platform:3.2.0'
+}
+def syncGame = tasks.register('syncGame',Sync) {
+ from('../../../public') { exclude '_headers','sw.js','manifest.webmanifest' }
+ into('src/main/assets/www')
+}
+tasks.named('preBuild') { dependsOn syncGame }
+tasks.configureEach { t -> if(t.name!='syncGame' && t.name =~ /(?i)(assets|lint)/) t.dependsOn syncGame }

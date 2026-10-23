@@ -1,0 +1,31 @@
+name: RiftRush
+options:
+  bundleIdPrefix: com.rounak
+  deploymentTarget:
+    iOS: '15.0'
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: 12.9.0
+  UserMessagingPlatform:
+    url: https://github.com/googleads/swift-package-manager-google-user-messaging-platform.git
+    from: 3.0.0
+targets:
+  RiftRush:
+    type: application
+    platform: iOS
+    sources:
+      - path: RiftRush
+        excludes: [Resources/www]
+      - path: RiftRush/Resources/www
+        type: folder
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.rounak.riftrush
+        INFOPLIST_FILE: RiftRush/Info.plist
+        SWIFT_VERSION: '5.0'
+        CODE_SIGN_STYLE: Automatic
+    dependencies:
+      - package: GoogleMobileAds
+      - package: UserMessagingPlatform
