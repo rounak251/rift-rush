@@ -13,7 +13,7 @@ with sync_playwright()as p:
  browser=p.chromium.launch(executable_path=str(EXE));c=browser.new_context(viewport={'width':390,'height':844},is_mobile=True,has_touch=True)
  s=c.new_page();errors=[];s.on('pageerror',lambda e:errors.append(str(e)));s.goto(BASE)
  # An existing version-1 save has no mission fields. Upgrade must keep its progress.
- s.evaluate("localStorage.setItem('rift-rush-v1',JSON.stringify({version:1,shards:26,skin:'violet',sound:false,reduced:true,runs:[],bests:{rush:1450,daily:0,endless:0},dailyBest:{}}))");s.reload();s.wait_for_load_state('networkidle')
+ s.evaluate("localStorage.setItem('rift-rush-v1',JSON.stringify({version:1,shards:26,skin:'violet',sound:false,reduced:true,runs:[],bests:{rush:1450,daily:0,endless:0},dailyBest:{}}))");s.reload();s.wait_for_load_state('networkidle');s.locator('[data-mode="rush"]').click()
  check('existing best and shards survive profile migration','1,450' in s.locator('#personal-best').inner_text() and '26 shards' in s.locator('#total-shards').inner_text())
  check('three daily missions display',s.locator('.mission-card').count()==3)
  s.locator('#play-btn').tap();s.wait_for_selector('#countdown',state='visible');s.keyboard.press('ArrowLeft');s.keyboard.press('Space')

@@ -17,6 +17,7 @@ with sync_playwright() as p:
     context=browser.new_context(viewport={'width':1440,'height':1100},accept_downloads=True)
     page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
     page.goto(BASE);page.wait_for_load_state('networkidle')
+    page.locator('[data-mode="rush"]').click()
     check('desktop fits viewport',page.evaluate('document.documentElement.scrollWidth<=innerWidth'))
     page.screenshot(path=str(ROOT/'artifacts/desktop-home.png'),full_page=True)
     page.locator('#how-btn').click();check('instructions dialog opens',page.locator('#info-dialog').is_visible());page.locator('.dialog-close').click()

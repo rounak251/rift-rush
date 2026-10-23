@@ -32,5 +32,5 @@ export function step(s,dt=STEP){
  s.rows=s.rows.filter(r=>r.z>-.18);
  if(s.mode!=='endless'&&s.time>=60){s.time=60;s.ended=true;s.won=s.hull>0;if(s.won)s.score+=s.hull*250}
 }
-export function challengeURL(origin,seed,score){const u=new URL(origin);u.search='';u.hash='';u.searchParams.set('seed',String(seed>>>0));u.searchParams.set('target',String(Math.max(0,Math.min(99999999,Math.floor(score)))));u.searchParams.set('v',String(VERSION));return u.href}
-export function parseChallenge(search){const q=new URLSearchParams(search);if(q.get('v')!==String(VERSION)||!/^\d{1,10}$/.test(q.get('seed')||''))return null;const seed=Number(q.get('seed'));if(seed>4294967295)return null;const target=Number(q.get('target'));return{seed,target:Number.isFinite(target)?Math.max(0,Math.min(99999999,Math.floor(target))):0}}
+export function challengeURL(origin,seed,score,mode='rush'){const u=new URL(origin);u.search='';u.hash='';u.searchParams.set('seed',String(seed>>>0));u.searchParams.set('target',String(Math.max(0,Math.min(99999999,Math.floor(score)))));u.searchParams.set('v',String(VERSION));if(mode==='assault')u.searchParams.set('m','assault');return u.href}
+export function parseChallenge(search){const q=new URLSearchParams(search);if(q.get('v')!==String(VERSION)||!/^\d{1,10}$/.test(q.get('seed')||''))return null;const seed=Number(q.get('seed'));if(seed>4294967295)return null;const target=Number(q.get('target'));return{seed,target:Number.isFinite(target)?Math.max(0,Math.min(99999999,Math.floor(target))):0,...(q.get('m')==='assault'?{mode:'assault'}:{})}}
