@@ -1,5 +1,5 @@
-const CACHE='rift-rush-v2.0.0';
-const FILES=['/','/index.html','/style.css','/app.js','/core.js','/missions.js','/assault.js','/assault-render.js','/portal.js','/online.js','/native.js','/assets/icon.svg','/assets/icon-192.png','/assets/icon-512.png','/assets/rift-art.webp','/manifest.webmanifest'];
+const CACHE='rift-rush-v2.1.0';
+const FILES=['/','/index.html','/style.css','/app.js','/core.js','/missions.js','/career.js','/assault-legacy.js','/assault.js','/assault-render.js','/portal.js','/online.js','/native.js','/assets/icon.svg','/assets/icon-192.png','/assets/icon-512.png','/assets/rift-art.webp','/manifest.webmanifest'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES))));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('rift-rush-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==location.origin)return;if(new URL(e.request.url).pathname==='/config.json'||new URL(e.request.url).pathname.startsWith('/api/'))return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const copy=r.clone();caches.open(CACHE).then(c=>c.put(e.request,copy))}return r}).catch(()=>caches.match(e.request,{ignoreVary:true}).then(r=>r||(e.request.mode==='navigate'?caches.match('/'):Response.error()))))});

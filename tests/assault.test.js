@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createAssault,stepAssault,moveAssault,nova,chooseUpgrade,ASSAULT_LIMIT} from '../public/assault.js';
+import {createAssault,stepAssault,moveAssault,nova,chooseUpgrade,ASSAULT_LIMIT} from '../public/assault-legacy.js';
 import {replayRun,signTicket,verifyTicket} from '../backend/service.mjs';
 import {challengeURL,parseChallenge,STEP} from '../public/core.js';
 export function fly(seed){const s=createAssault(seed),events=[];let ticks=0;
