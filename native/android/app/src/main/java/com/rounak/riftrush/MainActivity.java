@@ -1,6 +1,7 @@
 package com.rounak.riftrush;
 
-import android.app.Activity;
+import androidx.activity.ComponentActivity;
+import androidx.activity.OnBackPressedCallback;
 import android.os.Bundle;
 import android.net.Uri;
 import android.content.Intent;
@@ -13,9 +14,9 @@ import com.google.android.gms.ads.interstitial.*;
 import com.google.android.gms.ads.rewarded.*;
 import com.google.android.ump.*;
 import org.json.JSONObject;
-import java.util.Set;
+import java.util.Collections;
 
-public class MainActivity extends Activity {
+public class MainActivity extends ComponentActivity {
  private static final String HOST="rift-rush-rounak.lunarbook256.chatgpt.site", ORIGIN="https://"+HOST;
  private WebView web; private ConsentInformation consent; private InterstitialAd interstitial; private RewardedAd rewarded;
  private boolean adsInitialized=false,showing=false; private long lastAd=System.currentTimeMillis();
@@ -32,7 +33,7 @@ public class MainActivity extends Activity {
    @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest req){Uri u=req.getUrl();if("https".equals(u.getScheme())&&HOST.equals(u.getHost()))return false;if(req.isForMainFrame()&&"https".equals(u.getScheme()))startActivity(new Intent(Intent.ACTION_VIEW,u));return true;}
    @Override public void onReceivedSslError(WebView v,SslErrorHandler handler,android.net.http.SslError error){handler.cancel();}
   });
-  if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))WebViewCompat.addWebMessageListener(web,"RiftNative",Set.of(ORIGIN),(view,msg,origin,main,reply)->{
+  if(WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))WebViewCompat.addWebMessageListener(web,"RiftNative",Collections.singleton(ORIGIN),(view,msg,origin,main,reply)->{
    if(!main||!ORIGIN.equals(origin.toString()))return;
    try{JSONObject data=new JSONObject(msg.getData());String id=data.optString("id"),action=data.optString("action");if(id.length()>80)return;
     switch(action){
@@ -45,13 +46,14 @@ public class MainActivity extends Activity {
     }
    }catch(Exception ignored){}
   });
+  getOnBackPressedDispatcher().addCallback(this,new OnBackPressedCallback(true){@Override public void handleOnBackPressed(){confirmExit();}});
   web.setWebChromeClient(new WebChromeClient());web.loadUrl(ORIGIN+"/");
   if(BuildConfig.ADS_ENABLED){consent=UserMessagingPlatform.getConsentInformation(this);consent.requestConsentInfoUpdate(this,new ConsentRequestParameters.Builder().build(),()->UserMessagingPlatform.loadAndShowConsentFormIfRequired(this,error->initializeAds()),error->initializeAds());initializeAds();}
  }
  private void initializeAds(){if(adsInitialized||consent==null||!consent.canRequestAds())return;adsInitialized=true;MobileAds.initialize(this,status->runOnUiThread(()->{loadInterstitial();loadReward();}));}
  private void loadInterstitial(){if(!BuildConfig.ADS_ENABLED||!adsInitialized||!consent.canRequestAds())return;InterstitialAd.load(this,BuildConfig.INTERSTITIAL_ID,new AdRequest.Builder().build(),new InterstitialAdLoadCallback(){@Override public void onAdLoaded(@NonNull InterstitialAd ad){interstitial=ad;}@Override public void onAdFailedToLoad(@NonNull LoadAdError e){interstitial=null;}});}
  private void loadReward(){if(!BuildConfig.ADS_ENABLED||!adsInitialized||!consent.canRequestAds())return;RewardedAd.load(this,BuildConfig.REWARDED_ID,new AdRequest.Builder().build(),new RewardedAdLoadCallback(){@Override public void onAdLoaded(@NonNull RewardedAd ad){rewarded=ad;}@Override public void onAdFailedToLoad(@NonNull LoadAdError e){rewarded=null;}});}
- private void respond(JavaScriptReplyProxy reply,String id,String status,boolean earned){try{JSONObject o=new JSONObject();o.put("id",id);o.put("status",status);o.put("earned",earned);o.put("ads",BuildConfig.ADS_ENABLED&&adsInitialized);o.put("testAds",BuildConfig.DEBUG);o.put("rewardReady",rewarded!=null);o.put("privacyRequired",consent!=null&&consent.getPrivacyOptionsRequirementStatus()==ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);reply.postMessage(o.toString());}catch(Exception ignored){}}
+ private void respond(JavaScriptReplyProxy reply,String id,String status,boolean earned){if(!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER))return;try{JSONObject o=new JSONObject();o.put("id",id);o.put("status",status);o.put("earned",earned);o.put("ads",BuildConfig.ADS_ENABLED&&adsInitialized);o.put("testAds",BuildConfig.DEBUG);o.put("rewardReady",rewarded!=null);o.put("privacyRequired",consent!=null&&consent.getPrivacyOptionsRequirementStatus()==ConsentInformation.PrivacyOptionsRequirementStatus.REQUIRED);reply.postMessage(o.toString());}catch(Exception ignored){}}
  private void adEvent(String name){web.evaluateJavascript("window.dispatchEvent(new Event('"+name+"'))",null);}
  private void showInterstitial(JavaScriptReplyProxy reply,String id){
   if(showing||interstitial==null||System.currentTimeMillis()-lastAd<180000||consent==null||!consent.canRequestAds()){respond(reply,id,"unavailable",false);loadInterstitial();return;}
@@ -66,5 +68,5 @@ public class MainActivity extends Activity {
  @Override protected void onPause(){super.onPause();web.evaluateJavascript("window.dispatchEvent(new Event('blur'))",null);web.onPause();}
  @Override protected void onResume(){super.onResume();if(web!=null)web.onResume();}
  @Override protected void onDestroy(){if(web!=null){web.stopLoading();web.destroy();}super.onDestroy();}
- @Override public void onBackPressed(){web.evaluateJavascript("window.dispatchEvent(new Event('blur'))",null);new android.app.AlertDialog.Builder(this).setMessage("Leave the rift?").setPositiveButton("Exit",(d,w)->finish()).setNegativeButton("Stay",(d,w)->{}).show();}
+ private void confirmExit(){web.evaluateJavascript("window.dispatchEvent(new Event('blur'))",null);new android.app.AlertDialog.Builder(this).setMessage("Leave the rift?").setPositiveButton("Exit",(d,w)->finish()).setNegativeButton("Stay",(d,w)->{}).show();}
 }

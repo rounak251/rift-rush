@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		02DD07D939B643E99217C458 /* GameController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6A39C98D397FDAB04CA092C /* GameController.swift */; };
 		525FD65D76F08C3331794682 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 5A6DBB79043A75463847BDC8 /* GoogleMobileAds */; };
+		819B07B60368075463ED10C4 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5ACF6695B4F471CD33B9E4B4 /* Assets.xcassets */; };
 		ADAFA8EF6344DD0127C8A8E4 /* UserMessagingPlatform in Frameworks */ = {isa = PBXBuildFile; productRef = 470902E946A1AA4ABCD7D842 /* UserMessagingPlatform */; };
 		BDCED64796D99E853176E5E4 /* www in Resources */ = {isa = PBXBuildFile; fileRef = 348195B80C94ACA6839753FD /* www */; };
 		DBD922B2396A067B8032754D /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6B7EF6011E8E9078041AC5C /* AppDelegate.swift */; };
@@ -17,6 +18,7 @@
 /* Begin PBXFileReference section */
 		348195B80C94ACA6839753FD /* www */ = {isa = PBXFileReference; lastKnownFileType = folder; name = www; path = RiftRush/Resources/www; sourceTree = SOURCE_ROOT; };
 		3B3BA00BC10A41684E93F365 /* RiftRush.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = RiftRush.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5ACF6695B4F471CD33B9E4B4 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E6A39C98D397FDAB04CA092C /* GameController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameController.swift; sourceTree = "<group>"; };
 		F6B7EF6011E8E9078041AC5C /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		F98E0610D4C7446B13B44144 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -56,13 +58,14 @@
 			isa = PBXGroup;
 			children = (
 				F6B7EF6011E8E9078041AC5C /* AppDelegate.swift */,
+				5ACF6695B4F471CD33B9E4B4 /* Assets.xcassets */,
 				E6A39C98D397FDAB04CA092C /* GameController.swift */,
 				F98E0610D4C7446B13B44144 /* Info.plist */,
 			);
 			path = RiftRush;
 			sourceTree = "<group>";
 		};
-		"TEMP_79C660D3-511C-4F27-8AB7-3A91B4457AA5" /* Resources */ = {
+		"TEMP_D32D8155-4418-48D9-B1F2-52E212E7B5E7" /* Resources */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -135,6 +138,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				819B07B60368075463ED10C4 /* Assets.xcassets in Resources */,
 				BDCED64796D99E853176E5E4 /* www in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

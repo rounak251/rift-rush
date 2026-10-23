@@ -24,6 +24,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rounak.riftrush
         INFOPLIST_FILE: RiftRush/Info.plist
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         SWIFT_VERSION: '5.0'
         CODE_SIGN_STYLE: Automatic
     dependencies:
