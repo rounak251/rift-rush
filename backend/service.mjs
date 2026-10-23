@@ -33,6 +33,7 @@ export function replayRun(ticket,body,now=Date.now()){
  return{score:Math.floor(run.score),shards:run.shards,duration:Math.round(run.time*1000),combo:run.bestCombo,won:run.won};
 }
 const breakers=new WeakMap(),boardCaches=new WeakMap();
+const BOARD_HEADERS={'Cache-Control':'public, max-age=60, stale-while-revalidate=120'};
 async function withDB(env,action){if(!env.DB)throw new APIError(503,'Leaderboard is not configured.');if((breakers.get(env.DB)||0)>Date.now())throw new APIError(503,'Leaderboard is busy. Your local score is safe.');try{return await action(env.DB)}catch(e){breakers.set(env.DB,Date.now()+5000);throw new APIError(503,'Leaderboard is busy. Your local score is safe.')}}
 function boardFor(mode,day,assaultVersion=1){return mode==='daily'?'daily:'+day:mode==='assault'?'assault-v'+assaultVersion:mode}
 export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.now()){
@@ -67,10 +68,12 @@ export async function handleAPI(request,env,context={waitUntil:()=>{}},now=Date.
    // Cache availability must never turn a healthy database into a failed board.
    let cache;try{cache=globalThis.caches?.default;const hit=await cache?.match(cacheKey);if(hit)return hit}catch{cache=undefined}
    const memory=env.DB&&boardCaches.get(env.DB),local=memory?.get(board);
-   if(local&&local.expiresAt>now)return local.response.clone();
+   if(local&&local.expiresAt>now)return reply(local.data,200,BOARD_HEADERS);
    const data=await withDB(env,db=>db.prepare('SELECT player,score,duration_ms,combo FROM best_scores WHERE board=? ORDER BY score DESC,created_at DESC LIMIT 25').bind(board).all());
-   const response=reply({board,asOf:new Date(now).toISOString(),entries:(data.results||[]).map((r,i)=>({rank:i+1,alias:'Pilot-'+r.player.slice(0,6).toUpperCase(),score:r.score,duration:r.duration_ms,combo:r.combo}))},200,{'Cache-Control':'public, max-age=60, stale-while-revalidate=120'});
-   if(env.DB){let entries=boardCaches.get(env.DB);if(!entries){entries=new Map();boardCaches.set(env.DB,entries)}if(entries.size>=6)entries.delete(entries.keys().next().value);entries.set(board,{expiresAt:now+60000,response:response.clone()})}
+   const payload={board,asOf:new Date(now).toISOString(),entries:(data.results||[]).map((r,i)=>({rank:i+1,alias:'Pilot-'+r.player.slice(0,6).toUpperCase(),score:r.score,duration:r.duration_ms,combo:r.combo}))};
+   const response=reply(payload,200,BOARD_HEADERS);
+   // Cache plain data only: Worker response streams belong to their originating request.
+   if(env.DB){let entries=boardCaches.get(env.DB);if(!entries){entries=new Map();boardCaches.set(env.DB,entries)}if(entries.size>=6)entries.delete(entries.keys().next().value);entries.set(board,{expiresAt:now+60000,data:payload})}
    if(cache){try{context.waitUntil(cache.put(cacheKey,response.clone()).catch(()=>{}))}catch{}}
    return response;
   }
