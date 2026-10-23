@@ -1,8 +1,8 @@
 # Rift Rush
 
-A neon arcade game with 60-second Rush, UTC Daily Rift, Endless mode, cosmetic unlocks, mobile controls, sound, pause/resume, challenge links, and downloadable score cards. Original artwork is rendered on a short-lived rented GPU; gameplay runs locally on each player's device.
+A neon arcade game with 60-second Rush, UTC Daily Rift, Endless mode, cosmetic unlocks, mobile controls, sound, pause/resume, challenge links, and downloadable score cards. Version 1.1 adds three rotating daily missions with cosmetic rewards, a live score target, a two-second start countdown, immediate swipe steering, lane highlighting, ship trails, and a mobile play view that keeps the controls on screen. Existing ranked scoring and version-1 challenge links remain compatible. Original artwork is rendered on a short-lived rented GPU; gameplay runs locally on each player's device.
 
-`public/` is the shared game source. `backend/service.mjs` implements signed run tickets, deterministic score verification, and bounded leaderboard access. `app/` exposes the backend through Vinext/Cloudflare Workers, and `drizzle/` contains the D1 migration. `native/android/` is the Android package, while `native/ios/` contains the iPhone source and XcodeGen project definition.
+`public/` is the shared game source. `public/missions.js` owns bounded local mission progress; rewards settle once per completed run and never affect ranked scores. Mission dates use UTC and credit the day the run finishes. `backend/service.mjs` implements signed run tickets, deterministic score verification, and bounded leaderboard access. `app/` exposes the backend through Vinext/Cloudflare Workers, and `drizzle/` contains the D1 migration. `native/android/` is the Android package, while `native/ios/` contains the iPhone source and XcodeGen project definition.
 
 Run with Node 24 or newer:
 

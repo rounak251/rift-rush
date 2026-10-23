@@ -22,7 +22,7 @@ export async function loadBoard(){const s=document.getElementById('board-status'
 """
         if name=='app.js':
             text=text.replace("fetch('/config.json')","fetch('./config.json')")
-            text=text.replace("if('serviceWorker'in navigator)","if(false)")
+            text=text.replace("if(!isNative&&'serviceWorker'in navigator)","if(false)")
             text=text.replace('Online runs send a random device identifier, a signed run ticket, and steering inputs to verify your score. The public board shows a generated pilot alias and your best score. The browser edition does not load advertising trackers. Phone test builds include Google Mobile Ads and its consent controls.','This portal edition uses the CrazyGames SDK for platform gameplay events. It has no online leaderboard. Advertising is disabled in the Basic Launch package; the portal’s privacy policy also applies.')
         z.writestr(name,text)
 print(out)
